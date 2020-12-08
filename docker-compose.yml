@@ -1,0 +1,46 @@
+version: '2'
+services:
+  db:
+    image: mysql:latest
+    container_name: verkehrsforum_mysql
+    command: --default-authentication-plugin=mysql_native_password --innodb-use-native-aio=0
+    restart: always
+    networks:
+      - xenforo
+    volumes:
+      - ./volumes/mysql:/var/lib/mysql
+      - ./volumes/mysql-log:/var/log/mysql/
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+
+  php:
+    container_name: verkehrsforum_php
+    image: drivencode/xenforo2:latest
+    restart: always
+    depends_on:
+      - db
+    networks:
+      - xenforo
+    volumes:
+      - ${XENFORO_APP_PATH}:/var/xenforo
+
+  nginx:
+    container_name: verkehrsforum_nginx
+    image: nginx:latest
+    restart: always
+    ports:
+      - 127.0.0.1:6880:80
+    networks:
+      - xenforo
+    volumes_from:
+      - php
+    volumes:
+      - ${XENFORO_APP_PATH}:/var/xenforo
+      - ./conf/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./volumes/nginx:/var/log/nginx
+
+networks:
+  xenforo:
